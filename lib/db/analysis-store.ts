@@ -262,6 +262,7 @@ export async function persistMarketAnalysis({
 
       return {
         analysisRunId: analysisRun.id,
+        analysisCreatedAt: analysisRun.createdAt.toISOString(),
         commentsStored: comments.length
       };
     });
@@ -269,6 +270,7 @@ export async function persistMarketAnalysis({
     return {
       persisted: true,
       analysisRunId: result.analysisRunId,
+      analysisCreatedAt: result.analysisCreatedAt,
       commentsStored: result.commentsStored
     };
   } catch (error) {

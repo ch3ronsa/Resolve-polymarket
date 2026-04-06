@@ -27,6 +27,14 @@ const envSchema = z.object({
     (value) => emptyToUndefined(value) ?? "20",
     z.coerce.number().int().min(1).max(100)
   ),
+  ANALYSIS_CACHE_MAX_AGE_MS: z.preprocess(
+    (value) => emptyToUndefined(value) ?? "1800000",
+    z.coerce.number().int().positive()
+  ),
+  WATCH_SOON_WINDOW_DAYS: z.preprocess(
+    (value) => emptyToUndefined(value) ?? "7",
+    z.coerce.number().int().min(1).max(90)
+  ),
   NEXT_PUBLIC_APP_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   TELEGRAM_BOT_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional())
 });
@@ -38,6 +46,8 @@ const parsedEnv = envSchema.safeParse({
   POLYMARKET_API_TIMEOUT_MS: process.env.POLYMARKET_API_TIMEOUT_MS,
   POLYMARKET_API_RETRY_COUNT: process.env.POLYMARKET_API_RETRY_COUNT,
   POLYMARKET_COMMENTS_LIMIT: process.env.POLYMARKET_COMMENTS_LIMIT,
+  ANALYSIS_CACHE_MAX_AGE_MS: process.env.ANALYSIS_CACHE_MAX_AGE_MS,
+  WATCH_SOON_WINDOW_DAYS: process.env.WATCH_SOON_WINDOW_DAYS,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN
 });

@@ -33,6 +33,8 @@ ResolveRadar is a simple MVP shell for resolution-focused Polymarket analysis. A
 - `/analyze/[slug]` shareable analysis page
 - `/watch` empty watchlist placeholder
 - `/api/analyze` JSON analysis endpoint
+- `/api/analysis/[slug]` latest stored analysis endpoint
+- `/api/watch` generated watchlist endpoint
 - `/api/health` configuration health endpoint
 
 ## Local development
