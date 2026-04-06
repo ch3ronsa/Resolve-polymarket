@@ -26,6 +26,14 @@ enum AnalysisTriggerSource {
   TELEGRAM
   SEED
   MANUAL
+  SYNC
+}
+
+enum WatchEntryKind {
+  MANUAL
+  SOON_RESOLUTION
+  HIGH_RISK
+  RECENT_ACTIVITY
 }
 
 model Market {
@@ -130,23 +138,31 @@ model AnalysisRun {
   rawUpstream          Json
   createdAt            DateTime              @default(now())
   market               Market                @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  watchEntries         WatchEntry[]
 
   @@index([marketId, createdAt])
   @@map("analysis_runs")
 }
 
 model WatchEntry {
-  id             String    @id @default(cuid())
-  slug           String    @unique
+  id             String         @id @default(cuid())
+  kind           WatchEntryKind @default(MANUAL)
+  slug           String
   sourceInput    String
   marketId       String?
-  enabled        Boolean   @default(true)
+  analysisRunId  String?
+  enabled        Boolean        @default(true)
   note           String?
+  reason         String?
+  score          Int?
   lastCheckedAt  DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  market         Market?   @relation(fields: [marketId], references: [id], onDelete: SetNull)
+  lastMatchedAt  DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  market         Market?        @relation(fields: [marketId], references: [id], onDelete: SetNull)
+  analysisRun    AnalysisRun?   @relation(fields: [analysisRunId], references: [id], onDelete: SetNull)
 
-  @@index([enabled, updatedAt])
+  @@unique([kind, slug])
+  @@index([kind, enabled, updatedAt])
   @@map("watch_entries")
 }

@@ -111,7 +111,7 @@ export const analyzeRequestSchema = z.object({
 export const analysisRunMetaSchema = z.object({
   id: z.string(),
   createdAt: z.string(),
-  triggerSource: z.enum(["WEB", "API", "TELEGRAM", "SEED", "MANUAL"]),
+  triggerSource: z.enum(["WEB", "API", "TELEGRAM", "SEED", "MANUAL", "SYNC"]),
   analysisVersion: z.string(),
   engineName: z.string(),
   cached: z.boolean()

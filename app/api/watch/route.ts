@@ -9,9 +9,9 @@ import {
   watchDataSchema,
   watchQuerySchema
 } from "@/lib/api/schemas";
-import { listStoredMarketsWithLatestAnalysis } from "@/lib/db/analysis-read";
 import { env } from "@/lib/env";
-import { generateWatchEntries } from "@/lib/watch/generate-watchlist";
+import { mapWatchApiKind } from "@/lib/watch/generate-watchlist";
+import { readGeneratedWatchEntries } from "@/lib/watch/store";
 
 const responseSchema = successResponseSchema(watchDataSchema);
 
@@ -47,8 +47,12 @@ export async function GET(request: Request) {
       });
     }
 
-    const records = await listStoredMarketsWithLatestAnalysis(parsed.data.limit);
-    const entries = generateWatchEntries(records, parsed.data.kind, parsed.data.limit);
+    const internalKind = mapWatchApiKind(parsed.data.kind);
+    const storedEntries = await readGeneratedWatchEntries(internalKind, parsed.data.limit);
+    const entries = storedEntries.map((entry) => ({
+      ...entry,
+      kind: parsed.data.kind
+    }));
 
     return jsonSuccess({
       schema: responseSchema,

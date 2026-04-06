@@ -30,9 +30,13 @@ async function main() {
   try {
     await prisma.watchEntry.upsert({
       where: {
-        slug: fixture.market.slug
+        kind_slug: {
+          kind: "MANUAL",
+          slug: fixture.market.slug
+        }
       },
       create: {
+        kind: "MANUAL",
         slug: fixture.market.slug,
         sourceInput: fixture.sourceInput,
         enabled: true,

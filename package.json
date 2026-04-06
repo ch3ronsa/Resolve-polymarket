@@ -11,6 +11,9 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
+    "sync:active": "tsx scripts/sync-active-markets.ts",
+    "watchlists:generate": "tsx scripts/generate-watchlists.ts",
+    "sync:run": "tsx scripts/run-sync-cycle.ts",
     "bot:dev": "tsx scripts/telegram-bot.ts"
   },
   "prisma": {

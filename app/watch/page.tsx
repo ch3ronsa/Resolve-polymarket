@@ -2,15 +2,21 @@ import Link from "next/link";
 
 import { Panel } from "@/components/panel";
 import { SiteHeader } from "@/components/site-header";
-import { listStoredMarketsWithLatestAnalysis } from "@/lib/db/analysis-read";
 import { env } from "@/lib/env";
-import { generateWatchEntries } from "@/lib/watch/generate-watchlist";
+import { readGeneratedWatchEntries } from "@/lib/watch/store";
 
 function WatchEntryCard({
   entry
 }: {
-  entry: ReturnType<typeof generateWatchEntries>[number];
+  entry: Awaited<ReturnType<typeof readGeneratedWatchEntries>>[number];
 }) {
+  const kindLabel =
+    entry.kind === "high_risk"
+      ? "high risk"
+      : entry.kind === "soon_resolution"
+        ? "soon resolution"
+        : "recent activity";
+
   return (
     <Link
       href={`/analyze/${entry.slug}`}
@@ -18,7 +24,7 @@ function WatchEntryCard({
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-ink/10 bg-mist/60 px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate">
-          {entry.kind}
+          {kindLabel}
         </span>
         <span className="rounded-full border border-ink/10 bg-white px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-slate">
           {entry.riskLevel} risk
@@ -89,9 +95,11 @@ export default async function WatchPage() {
     );
   }
 
-  const records = await listStoredMarketsWithLatestAnalysis(40);
-  const riskyEntries = generateWatchEntries(records, "risky", 12);
-  const soonEntries = generateWatchEntries(records, "soon", 12);
+  const [riskyEntries, soonEntries, recentActivityEntries] = await Promise.all([
+    readGeneratedWatchEntries("high_risk", 12),
+    readGeneratedWatchEntries("soon_resolution", 12),
+    readGeneratedWatchEntries("recent_activity", 12)
+  ]);
 
   return (
     <main className="min-h-screen px-6 py-6">
@@ -115,7 +123,9 @@ export default async function WatchPage() {
               </div>
               <div className="rounded-[1.5rem] border border-ink/10 bg-white/75 px-4 py-4">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-slate">Stored analyses</p>
-                <p className="mt-2 font-serif text-3xl text-ink">{records.length}</p>
+                <p className="mt-2 font-serif text-3xl text-ink">
+                  {riskyEntries.length + soonEntries.length + recentActivityEntries.length}
+                </p>
               </div>
             </div>
           </Panel>
@@ -144,7 +154,7 @@ export default async function WatchPage() {
               ) : (
                 <EmptyWatchSection
                   title="No risky entries right now"
-                  description="Analyze more markets or refresh existing ones to build out this queue."
+                  description="Run the background sync to refresh generated high-risk entries."
                 />
               )}
             </div>
@@ -161,7 +171,28 @@ export default async function WatchPage() {
               ) : (
                 <EmptyWatchSection
                   title="No near-term dates detected"
-                  description="Once stored analyses expose upcoming critical dates, they will appear here."
+                  description="Run the background sync to refresh the soon-resolution queue."
+                />
+              )}
+            </div>
+          </Panel>
+        </section>
+
+        <section className="mt-6">
+          <Panel
+            eyebrow="Recent activity"
+            title="Fresh clarification or comment activity"
+            description={`This queue highlights markets with recent comment activity within the last ${env.RECENT_ACTIVITY_WINDOW_HOURS} hours.`}
+          >
+            <div className="space-y-4">
+              {recentActivityEntries.length ? (
+                recentActivityEntries.map((entry) => (
+                  <WatchEntryCard key={`recent-${entry.slug}`} entry={entry} />
+                ))
+              ) : (
+                <EmptyWatchSection
+                  title="No recent activity entries yet"
+                  description="Run the sync job after comments have been refreshed to generate this queue."
                 />
               )}
             </div>

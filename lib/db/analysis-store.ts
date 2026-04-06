@@ -15,7 +15,7 @@ type PersistMarketAnalysisInput = {
   rawComments?: unknown;
   analysis: MarketAnalysisResult;
   sourceInput?: string;
-  triggerSource?: "WEB" | "API" | "TELEGRAM" | "SEED" | "MANUAL";
+  triggerSource?: "WEB" | "API" | "TELEGRAM" | "SEED" | "MANUAL" | "SYNC";
 };
 
 const riskLabelMap = {
@@ -252,6 +252,7 @@ export async function persistMarketAnalysis({
       await tx.watchEntry.updateMany({
         where: {
           slug: market.slug,
+          kind: "MANUAL",
           marketId: null
         },
         data: {

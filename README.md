@@ -52,6 +52,9 @@ Helpful commands:
 
 - `npx prisma migrate deploy`
 - `npm run prisma:seed`
+- `npm run sync:active`
+- `npm run watchlists:generate`
+- `npm run sync:run`
 - `npm run build`
 
 ## Notes
@@ -59,3 +62,4 @@ Helpful commands:
 - The MVP intentionally avoids auth, billing, alerts, websockets, and trading-oriented UX.
 - Database persistence is optional for the UI shell. If `DATABASE_URL` is missing, the analysis page still renders live API-backed data.
 - The Telegram bot file is only a starter shell in this step.
+- Background sync is incremental by design: it discovers active markets via the Polymarket events endpoint, scores only a bounded candidate set, and avoids syncing the full universe blindly.

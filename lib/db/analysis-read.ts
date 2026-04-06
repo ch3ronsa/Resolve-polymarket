@@ -148,6 +148,7 @@ export async function getLatestStoredAnalysisBySlug(slug: string) {
     include: {
       watchEntries: {
         where: {
+          kind: "MANUAL",
           enabled: true
         },
         take: 1
@@ -206,8 +207,15 @@ export async function listStoredMarketsWithLatestAnalysis(limit: number) {
       updatedAt: "desc"
     },
     include: {
+      comments: {
+        orderBy: {
+          upstreamCreatedAt: "desc"
+        },
+        take: 1
+      },
       watchEntries: {
         where: {
+          kind: "MANUAL",
           enabled: true
         },
         take: 1
@@ -247,7 +255,9 @@ export async function listStoredMarketsWithLatestAnalysis(limit: number) {
           analysisVersion: run.analysisVersion,
           engineName: run.engineName
         },
-        tracked: Boolean(record.watchEntries[0])
+        tracked: Boolean(record.watchEntries[0]),
+        latestCommentCreatedAt: record.comments[0]?.upstreamCreatedAt?.toISOString() ?? null,
+        latestCommentCount: record.eventCommentCount ?? record.comments.length
       };
     });
 }

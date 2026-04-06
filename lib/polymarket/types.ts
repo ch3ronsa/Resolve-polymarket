@@ -18,6 +18,20 @@ export type PolymarketEmbeddedEvent = {
   commentCount: number | null;
 };
 
+export type PolymarketEventMarket = {
+  id: string;
+  slug: string;
+  question: string;
+  endDate: string | null;
+  active: boolean;
+  closed: boolean;
+  marketType: string | null;
+  formatType: string | null;
+  commentsEnabled: boolean | null;
+  volume: number | null;
+  liquidity: number | null;
+};
+
 export type PolymarketMarket = {
   id: string;
   conditionId: string | null;
@@ -75,6 +89,7 @@ export type PolymarketEvent = {
   commentCount: number | null;
   disqusThread: string | null;
   closedTime: string | null;
+  markets: PolymarketEventMarket[];
 };
 
 export type PolymarketComment = {
@@ -235,7 +250,20 @@ export function parsePolymarketEvents(payload: unknown): PolymarketEvent[] {
     commentsEnabled: event.commentsEnabled ?? null,
     commentCount: event.commentCount ?? null,
     disqusThread: event.disqusThread ?? null,
-    closedTime: event.closedTime ?? null
+    closedTime: event.closedTime ?? null,
+    markets: event.markets.map((market) => ({
+      id: String(market.id),
+      slug: market.slug,
+      question: market.question,
+      endDate: market.endDate ?? null,
+      active: market.active,
+      closed: market.closed,
+      marketType: market.marketType ?? null,
+      formatType: market.formatType ?? null,
+      commentsEnabled: market.commentsEnabled ?? null,
+      volume: market.volumeNum ?? coerceNumber(market.volume),
+      liquidity: market.liquidityNum ?? coerceNumber(market.liquidity)
+    }))
   }));
 }
 
