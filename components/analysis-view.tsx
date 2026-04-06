@@ -11,19 +11,40 @@ type AnalysisViewProps = {
   analysis: MarketAnalysisResult;
   persisted: boolean;
   persistenceReason?: string;
+  analysisRunId?: string;
+  rawMetadata?: {
+    market: unknown;
+    event?: unknown;
+    comments?: unknown;
+  };
 };
+
+function JsonPreview({ value }: { value: unknown }) {
+  return (
+    <pre className="overflow-x-auto rounded-[1.5rem] bg-[#f4f6f7] p-4 text-xs leading-6 text-ink">
+      {JSON.stringify(value, null, 2)}
+    </pre>
+  );
+}
 
 export function AnalysisView({
   market,
   analysis,
   persisted,
-  persistenceReason
+  persistenceReason,
+  analysisRunId,
+  rawMetadata
 }: AnalysisViewProps) {
+  const primaryUncertainty =
+    analysis.ambiguityFlags[0]?.description ||
+    analysis.commentSignals[0]?.summary ||
+    "The deterministic checks did not find a dominant unresolved issue, but the full rules text can still matter.";
+
   return (
     <div className="space-y-6">
-      <Panel>
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-          <div className="max-w-3xl">
+      <Panel className="overflow-hidden">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
             <div className="flex flex-wrap items-center gap-3">
               <StatusPill risk={analysis.riskLevel} />
               <span className="rounded-full border border-ink/10 bg-white px-3 py-1 text-xs uppercase tracking-[0.24em] text-slate">
@@ -36,50 +57,73 @@ export function AnalysisView({
                 {market.category || "Uncategorized"}
               </span>
             </div>
-            <h1 className="mt-5 font-serif text-4xl leading-tight text-ink">
+            <h1 className="mt-5 font-serif text-4xl leading-tight text-ink sm:text-5xl">
               {market.question}
             </h1>
-            <p className="mt-4 text-base leading-7 text-slate">{analysis.summary}</p>
+            <p className="mt-5 max-w-3xl text-base leading-7 text-slate">{analysis.summary}</p>
           </div>
-          <div className="min-w-64 rounded-[1.75rem] border border-ink/10 bg-white/80 p-5">
-            <p className="text-xs uppercase tracking-[0.28em] text-signal/75">
-              Persistence
-            </p>
-            <p className="mt-3 text-sm leading-6 text-slate">
-              {persisted
-                ? `This analysis was written to the configured database with engine version ${analysis.version}.`
-                : persistenceReason ||
-                  "Database storage is not configured yet, so this result is being shown live only."}
-            </p>
+
+          <div className="grid gap-4">
+            <div className="rounded-[1.75rem] border border-signal/12 bg-mist/65 p-5">
+              <p className="text-xs uppercase tracking-[0.28em] text-signal/75">What this means</p>
+              <p className="mt-3 text-sm leading-7 text-ink">{analysis.resolutionSourceSummary}</p>
+            </div>
+            <div className="rounded-[1.75rem] border border-caution/12 bg-dune/60 p-5">
+              <p className="text-xs uppercase tracking-[0.28em] text-caution/80">
+                What is still uncertain
+              </p>
+              <p className="mt-3 text-sm leading-7 text-ink">{primaryUncertainty}</p>
+            </div>
+            <div className="rounded-[1.75rem] border border-ink/10 bg-white/80 p-5">
+              <p className="text-xs uppercase tracking-[0.28em] text-signal/75">Traceability</p>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-slate">
+                <p>
+                  Analysis engine: <span className="text-ink">{analysis.engineName}</span>
+                </p>
+                <p>
+                  Engine version: <span className="text-ink">{analysis.version}</span>
+                </p>
+                <p>
+                  Analysis run: <span className="text-ink">{analysisRunId ?? "Not stored"}</span>
+                </p>
+                <p>
+                  Storage:{" "}
+                  <span className="text-ink">
+                    {persisted ? "Saved to database" : persistenceReason || "Not stored"}
+                  </span>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </Panel>
 
-      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <Panel
-          eyebrow="Resolution source"
-          title="How the source of truth looks right now"
-          description="A deterministic summary of the upstream resolution fields, with no LLM interpretation."
+          eyebrow="Resolution"
+          title="Official source and summary"
+          description="The engine starts with the source field and the market wording returned by Polymarket."
         >
-          <div className="rounded-[1.75rem] border border-ink/10 bg-white/75 p-5">
-            <p className="text-sm leading-7 text-slate">{analysis.resolutionSourceSummary}</p>
-          </div>
-          <div className="mt-4 rounded-[1.75rem] border border-ink/10 bg-mist/70 p-5">
-            <p className="text-xs uppercase tracking-[0.28em] text-signal/75">
-              Resolution source field
-            </p>
-            <p className="mt-3 text-sm leading-6 text-ink">
-              {analysis.resolutionSource || "No explicit resolution source was provided."}
-            </p>
+          <div className="space-y-4">
+            <div className="rounded-[1.5rem] border border-ink/10 bg-white/80 p-5">
+              <p className="text-xs uppercase tracking-[0.24em] text-slate">Official resolution source</p>
+              <p className="mt-3 text-sm leading-7 text-ink">
+                {analysis.resolutionSource || "No explicit resolution source was provided."}
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] border border-ink/10 bg-mist/55 p-5">
+              <p className="text-xs uppercase tracking-[0.24em] text-slate">Plain-language explanation</p>
+              <p className="mt-3 text-sm leading-7 text-ink">{analysis.resolutionSourceSummary}</p>
+            </div>
           </div>
         </Panel>
 
         <Panel
           eyebrow="Critical dates"
-          title="Date and deadline read"
+          title="Dates and timezone notes"
           description={analysis.criticalDatesSummary}
         >
-          <div className="grid gap-3">
+          <div className="space-y-3">
             {analysis.criticalDates.length ? (
               analysis.criticalDates.map((item) => (
                 <div
@@ -103,7 +147,7 @@ export function AnalysisView({
             {analysis.timezoneNotes.map((note) => (
               <div
                 key={note}
-                className="rounded-[1.5rem] border border-ink/10 bg-dune/60 px-4 py-4 text-sm leading-6 text-slate"
+                className="rounded-[1.5rem] border border-ink/10 bg-dune/55 px-4 py-4 text-sm leading-6 text-slate"
               >
                 {note}
               </div>
@@ -112,11 +156,11 @@ export function AnalysisView({
         </Panel>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
         <Panel
-          eyebrow="Ambiguity flags"
-          title="Items that may deserve a manual rules read"
-          description="These are deterministic heuristics tied to specific source fields."
+          eyebrow="Uncertainty"
+          title="Ambiguity flags"
+          description="These are the main reasons the current market wording may still need a manual rules read."
         >
           <div className="space-y-3">
             {analysis.ambiguityFlags.length ? (
@@ -125,7 +169,12 @@ export function AnalysisView({
                   key={flag.id}
                   className="rounded-[1.5rem] border border-caution/15 bg-caution/5 px-4 py-4"
                 >
-                  <p className="text-sm font-medium text-caution">{flag.title}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-caution">{flag.title}</p>
+                    <span className="rounded-full border border-caution/20 bg-white px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-caution">
+                      {flag.severity}
+                    </span>
+                  </div>
                   <p className="mt-2 text-sm leading-6 text-caution">{flag.description}</p>
                 </div>
               ))
@@ -139,8 +188,8 @@ export function AnalysisView({
 
         <Panel
           eyebrow="Comments"
-          title="Dispute and clarification signals"
-          description="Comment scanning is heuristic only and meant to highlight potential disagreement, not settle it."
+          title="Clarification and dispute signals"
+          description="If comments were available, the engine scans them for disagreement, clarification, and procedural language."
         >
           <div className="space-y-3">
             {analysis.commentSignals.length ? (
@@ -149,24 +198,29 @@ export function AnalysisView({
                   key={signal.id}
                   className="rounded-[1.5rem] border border-ink/10 bg-white/75 px-4 py-4"
                 >
-                  <p className="text-sm font-medium capitalize text-ink">{signal.kind}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium capitalize text-ink">{signal.kind}</p>
+                    <span className="rounded-full border border-ink/10 bg-mist/60 px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-slate">
+                      {signal.evidenceIds.length} evidence item{signal.evidenceIds.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
                   <p className="mt-2 text-sm leading-6 text-slate">{signal.summary}</p>
                 </div>
               ))
             ) : (
               <div className="rounded-[1.5rem] border border-dashed border-ink/15 bg-white/75 px-4 py-5 text-sm text-slate">
-                No comment-based dispute or clarification signals were detected.
+                No comment-based disagreement or clarification signals were detected.
               </div>
             )}
           </div>
         </Panel>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <Panel
-          eyebrow="Evidence"
-          title="Why each heuristic fired"
-          description="Each evidence item points to a source field or comment snippet that triggered a flag or note."
+          eyebrow="Rationale"
+          title="Evidence behind the flags"
+          description="Each entry ties a heuristic to the field or snippet that triggered it."
         >
           <div className="space-y-3">
             {analysis.evidence.length ? (
@@ -199,9 +253,9 @@ export function AnalysisView({
         </Panel>
 
         <Panel
-          eyebrow="Market snapshot"
-          title="Useful raw facts"
-          description="A lightweight snapshot of the public fields most relevant to an initial resolution read."
+          eyebrow="Metadata"
+          title="Market facts and raw source metadata"
+          description="This section keeps the underlying source fields close at hand for traceability."
         >
           <div className="grid gap-3 sm:grid-cols-2">
             {analysis.marketFacts.map((fact) => (
@@ -225,6 +279,32 @@ export function AnalysisView({
               polymarket.com/event/{market.slug}
             </Link>
           </div>
+
+          {rawMetadata ? (
+            <details className="mt-4 rounded-[1.5rem] border border-ink/10 bg-white/75 p-4">
+              <summary className="cursor-pointer text-sm font-medium text-ink">
+                View raw source metadata
+              </summary>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.22em] text-slate">Raw market payload</p>
+                  <JsonPreview value={rawMetadata.market} />
+                </div>
+                {rawMetadata.event ? (
+                  <div>
+                    <p className="mb-2 text-xs uppercase tracking-[0.22em] text-slate">Raw event payload</p>
+                    <JsonPreview value={rawMetadata.event} />
+                  </div>
+                ) : null}
+                {rawMetadata.comments ? (
+                  <div>
+                    <p className="mb-2 text-xs uppercase tracking-[0.22em] text-slate">Raw comments payload</p>
+                    <JsonPreview value={rawMetadata.comments} />
+                  </div>
+                ) : null}
+              </div>
+            </details>
+          ) : null}
         </Panel>
       </div>
     </div>

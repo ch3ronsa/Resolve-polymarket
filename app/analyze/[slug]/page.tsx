@@ -106,6 +106,12 @@ export default async function AnalyzePage({ params }: AnalyzePageProps) {
             analysis={analysis}
             persisted={persistence.persisted}
             persistenceReason={persistence.reason}
+            analysisRunId={persistence.analysisRunId}
+            rawMetadata={{
+              market: bundle.market.raw,
+              event: bundle.event?.raw,
+              comments: bundle.comments.raw
+            }}
           />
         </div>
         <div className="mt-6">

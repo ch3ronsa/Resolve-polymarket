@@ -6,8 +6,14 @@ import { useState, useTransition } from "react";
 import { extractPolymarketSlug } from "@/lib/polymarket/slug";
 
 const sampleInputs = [
-  "https://polymarket.com/event/fed-decision-in-october",
-  "will-bitcoin-reach-150k-in-2026"
+  {
+    label: "Fed sample",
+    value: "https://polymarket.com/event/fed-decision-in-october"
+  },
+  {
+    label: "Bitcoin sample",
+    value: "will-bitcoin-reach-150k-in-2026"
+  }
 ];
 
 export function MarketUrlForm() {
@@ -38,6 +44,7 @@ export function MarketUrlForm() {
         <label htmlFor="market-input" className="sr-only">
           Polymarket market URL or slug
         </label>
+        <p className="px-1 text-xs uppercase tracking-[0.24em] text-slate">Polymarket URL or slug</p>
         <div className="flex flex-col gap-3 lg:flex-row">
           <input
             id="market-input"
@@ -58,15 +65,15 @@ export function MarketUrlForm() {
         <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate">
           {sampleInputs.map((sample) => (
             <button
-              key={sample}
+              key={sample.label}
               type="button"
               onClick={() => {
-                setInput(sample);
+                setInput(sample.value);
                 setError(null);
               }}
               className="rounded-full border border-ink/10 bg-white px-3 py-2 transition hover:border-signal/20 hover:bg-mist"
             >
-              Use sample
+              {sample.label}
             </button>
           ))}
         </div>
@@ -78,7 +85,8 @@ export function MarketUrlForm() {
       ) : (
         <p className="text-sm leading-6 text-slate">
           ResolveRadar accepts either the full Polymarket event URL or the market slug by
-          itself. The resulting page is stable and shareable.
+          itself. You will land on a shareable page that explains what the market appears
+          to mean, what still looks uncertain, and which fields triggered the flags.
         </p>
       )}
     </div>

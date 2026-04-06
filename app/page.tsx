@@ -4,28 +4,35 @@ import { MarketUrlForm } from "@/components/market-url-form";
 import { Panel } from "@/components/panel";
 import { SiteHeader } from "@/components/site-header";
 
-const signals = [
+const deliverables = [
   {
-    title: "Plain-language summary",
+    title: "What this means",
     description:
-      "Explain what the market resolves on, where the resolution guidance points, and which dates matter most."
+      "A short explanation of what the market seems to resolve on, written in plain language."
   },
   {
-    title: "Ambiguity flags",
+    title: "What is still uncertain",
     description:
-      "Spot subjective wording, sparse rule text, missing dates, and other issues that deserve a closer read."
+      "Flags for wording, date boundaries, timezone issues, and missing source clarity."
   },
   {
-    title: "Shareable output",
+    title: "Why the flags fired",
     description:
-      "Each market analysis lives at its own stable URL so the same summary can be shared on web and Telegram."
+      "Evidence cards tie each heuristic back to a field or comment snippet from the source payload."
   }
 ];
 
 const principles = [
-  "No trading prompts or performance framing.",
-  "Deterministic logic first, with API-backed facts from Polymarket.",
-  "Storage and Telegram hooks are present, but kept intentionally lightweight."
+  "No trading framing",
+  "Deterministic first",
+  "Shareable pages",
+  "Traceable evidence"
+];
+
+const workflow = [
+  "Paste a Polymarket URL or slug.",
+  "ResolveRadar fetches the official market payload and comments when available.",
+  "The app stores a versioned analysis run and shows the result on a stable page."
 ];
 
 export default function HomePage() {
@@ -39,16 +46,15 @@ export default function HomePage() {
               <div className="absolute inset-x-0 top-0 h-28 rounded-[2rem] bg-gradient-to-r from-tide/90 via-white/70 to-dune/80 blur-2xl" />
               <div className="relative">
                 <p className="text-sm uppercase tracking-[0.28em] text-signal/75">
-                  Resolution-first market notes
+                  Resolve Polymarket markets with more context
                 </p>
                 <h1 className="mt-5 max-w-3xl font-serif text-4xl leading-tight text-ink sm:text-5xl">
-                  Paste a Polymarket URL and get a calm read on how resolution is supposed
-                  to work.
+                  A calm, evidence-backed read of how a market is supposed to resolve.
                 </h1>
                 <p className="mt-5 max-w-2xl text-base leading-7 text-slate">
-                  ResolveRadar turns a market page into a concise resolution brief with
-                  critical dates, ambiguity flags, and a plain risk label. It is designed
-                  for clarity, not hype.
+                  ResolveRadar fetches the official Polymarket market data, surfaces
+                  the fields that matter most, and explains where uncertainty still sits.
+                  It is built to help you read the rules more carefully, not to push a position.
                 </p>
                 <div className="mt-8">
                   <MarketUrlForm />
@@ -68,12 +74,12 @@ export default function HomePage() {
           </Panel>
 
           <Panel
-            eyebrow="What ships in this MVP"
-            title="Simple by design"
-            description="The first version focuses on trustworthy summaries rather than dashboards, alerts, or trading-style UI."
+            eyebrow="What you get"
+            title="One analysis page, four core answers"
+            description="The analysis page is meant to be scanned top to bottom on mobile or desktop without feeling like a terminal."
           >
             <div className="space-y-4">
-              {signals.map((signal) => (
+              {deliverables.map((signal) => (
                 <div
                   key={signal.title}
                   className="rounded-3xl border border-ink/10 bg-white/75 p-5"
@@ -90,54 +96,44 @@ export default function HomePage() {
 
         <section className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <Panel
-            eyebrow="Routes"
-            title="Ready pages"
-            description="The initial shell exposes the homepage, a shareable analysis page, and an empty watchlist view."
+            eyebrow="How it works"
+            title="A narrow, deterministic workflow"
+            description="The MVP keeps the pipeline intentionally simple so each result can be traced back to upstream fields."
           >
-            <div className="grid gap-3 text-sm text-slate">
-              <Link
-                href="/watch"
-                className="rounded-2xl border border-ink/10 bg-white/75 px-4 py-3 transition hover:border-signal/20 hover:bg-white"
-              >
-                View `/watch`
-              </Link>
-              <Link
-                href="/analyze/will-bitcoin-reach-150k-in-2026"
-                className="rounded-2xl border border-ink/10 bg-white/75 px-4 py-3 transition hover:border-signal/20 hover:bg-white"
-              >
-                Open a sample `/analyze/[slug]` page
-              </Link>
+            <div className="space-y-3">
+              {workflow.map((step, index) => (
+                <div
+                  key={step}
+                  className="flex gap-4 rounded-[1.5rem] border border-ink/10 bg-white/75 p-4 text-sm leading-6 text-slate"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-xs font-semibold text-white">
+                    {index + 1}
+                  </div>
+                  <p>{step}</p>
+                </div>
+              ))}
             </div>
           </Panel>
 
           <Panel
-            eyebrow="How it works"
-            title="A narrow, deterministic pipeline"
-            description="Fetch from Polymarket, normalize the market payload, score ambiguity with rules, and optionally persist the result."
+            eyebrow="Explore"
+            title="Try the product flow"
+            description="Open a real analysis page or review the current watchlist view."
           >
-            <ol className="grid gap-4 text-sm text-slate sm:grid-cols-3">
-              <li className="rounded-3xl border border-ink/10 bg-white/75 p-5">
-                <p className="font-medium text-ink">1. Parse input</p>
-                <p className="mt-2 leading-6">
-                  Accept either the full Polymarket URL or a slug and normalize it into a
-                  stable route.
-                </p>
-              </li>
-              <li className="rounded-3xl border border-ink/10 bg-white/75 p-5">
-                <p className="font-medium text-ink">2. Fetch facts</p>
-                <p className="mt-2 leading-6">
-                  Pull official market fields from the public Gamma API and expose the key
-                  dates, sources, and structure.
-                </p>
-              </li>
-              <li className="rounded-3xl border border-ink/10 bg-white/75 p-5">
-                <p className="font-medium text-ink">3. Score risk</p>
-                <p className="mt-2 leading-6">
-                  Apply rule-based checks for ambiguity and store the resulting summary
-                  when a database is configured.
-                </p>
-              </li>
-            </ol>
+            <div className="grid gap-3 text-sm text-slate">
+              <Link
+                href="/analyze/will-bitcoin-reach-150k-in-2026"
+                className="rounded-2xl border border-ink/10 bg-white/75 px-4 py-4 transition hover:border-signal/20 hover:bg-white"
+              >
+                Open a sample analysis page
+              </Link>
+              <Link
+                href="/watch"
+                className="rounded-2xl border border-ink/10 bg-white/75 px-4 py-4 transition hover:border-signal/20 hover:bg-white"
+              >
+                Open the watchlist page
+              </Link>
+            </div>
           </Panel>
         </section>
       </div>

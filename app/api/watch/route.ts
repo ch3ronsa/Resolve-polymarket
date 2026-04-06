@@ -11,33 +11,9 @@ import {
 } from "@/lib/api/schemas";
 import { listStoredMarketsWithLatestAnalysis } from "@/lib/db/analysis-read";
 import { env } from "@/lib/env";
-import type { CriticalDate } from "@/lib/analysis/market-analysis";
+import { generateWatchEntries } from "@/lib/watch/generate-watchlist";
 
 const responseSchema = successResponseSchema(watchDataSchema);
-
-function findNextCriticalDate(criticalDates: CriticalDate[]): CriticalDate | null {
-  const now = Date.now();
-
-  const match =
-    criticalDates
-    .map((item) => ({
-      ...item,
-      time: new Date(item.iso).getTime()
-    }))
-    .filter((item) => Number.isFinite(item.time) && item.time >= now)
-    .sort((a, b) => a.time - b.time)[0] ?? null;
-
-  if (!match) {
-    return null;
-  }
-
-  return {
-    label: match.label,
-    iso: match.iso,
-    display: match.display,
-    detail: match.detail
-  };
-}
 
 export async function GET(request: Request) {
   const requestId = randomUUID();
@@ -72,61 +48,7 @@ export async function GET(request: Request) {
     }
 
     const records = await listStoredMarketsWithLatestAnalysis(parsed.data.limit);
-    const soonWindowMs = env.WATCH_SOON_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-
-    const entries = records
-      .map((record) => {
-        const nextCriticalDate = findNextCriticalDate(record.analysis.criticalDates);
-        const riskyReason =
-          record.analysis.ambiguityFlags[0]?.title ||
-          record.analysis.commentSignals[0]?.summary ||
-          "Latest analysis marked this market as meaningfully risky.";
-        const soonReason = nextCriticalDate
-          ? `${nextCriticalDate.label} is coming up on ${nextCriticalDate.display}.`
-          : "";
-
-        return {
-          slug: record.slug,
-          question: record.question,
-          kind: parsed.data.kind,
-          analysisRunId: record.analysisRun.id,
-          analysisCreatedAt: record.analysisRun.createdAt,
-          riskLevel: record.analysis.riskLevel,
-          riskScore: record.analysis.riskScore,
-          confidenceLevel: record.analysis.confidenceLevel,
-          nextCriticalDate,
-          reason: parsed.data.kind === "risky" ? riskyReason : soonReason,
-          tracked: record.tracked
-        };
-      })
-      .filter((entry) => {
-        if (parsed.data.kind === "risky") {
-          return entry.riskLevel === "high" || entry.riskLevel === "unknown" || entry.riskScore >= 67;
-        }
-
-        if (!entry.nextCriticalDate) {
-          return false;
-        }
-
-        const nextTime = new Date(entry.nextCriticalDate.iso).getTime();
-        return nextTime >= now && nextTime - now <= soonWindowMs;
-      })
-      .sort((left, right) => {
-        if (parsed.data.kind === "risky") {
-          return right.riskScore - left.riskScore;
-        }
-
-        if (!left.nextCriticalDate || !right.nextCriticalDate) {
-          return 0;
-        }
-
-        return (
-          new Date(left.nextCriticalDate.iso).getTime() -
-          new Date(right.nextCriticalDate.iso).getTime()
-        );
-      })
-      .slice(0, parsed.data.limit);
+    const entries = generateWatchEntries(records, parsed.data.kind, parsed.data.limit);
 
     return jsonSuccess({
       schema: responseSchema,
