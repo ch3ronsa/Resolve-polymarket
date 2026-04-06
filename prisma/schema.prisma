@@ -11,6 +11,13 @@ enum ResolutionRisk {
   LOW
   MEDIUM
   HIGH
+  UNKNOWN
+}
+
+enum ConfidenceLevel {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 enum AnalysisTriggerSource {
@@ -100,21 +107,29 @@ model MarketComment {
 }
 
 model AnalysisRun {
-  id                String                @id @default(cuid())
-  marketId          String
-  triggerSource     AnalysisTriggerSource @default(WEB)
-  sourceInput       String?
-  summary           String
-  resolutionSummary String
-  resolutionSource  String?
-  riskLabel         ResolutionRisk
-  ambiguityFlags    Json
-  criticalDates     Json
-  marketFacts       Json
-  rawAnalysis       Json
-  rawUpstream       Json
-  createdAt         DateTime              @default(now())
-  market            Market                @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  id                   String                @id @default(cuid())
+  marketId             String
+  triggerSource        AnalysisTriggerSource @default(WEB)
+  sourceInput          String?
+  analysisVersion      String
+  engineName           String
+  summary              String
+  resolutionSummary    String
+  resolutionSource     String?
+  criticalDatesSummary String
+  riskLabel            ResolutionRisk
+  riskScore            Int
+  confidenceLevel      ConfidenceLevel
+  ambiguityFlags       Json
+  commentSignals       Json
+  criticalDates        Json
+  timezoneNotes        Json
+  evidence             Json
+  marketFacts          Json
+  rawAnalysis          Json
+  rawUpstream          Json
+  createdAt            DateTime              @default(now())
+  market               Market                @relation(fields: [marketId], references: [id], onDelete: Cascade)
 
   @@index([marketId, createdAt])
   @@map("analysis_runs")

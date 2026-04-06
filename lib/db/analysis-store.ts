@@ -21,6 +21,13 @@ type PersistMarketAnalysisInput = {
 const riskLabelMap = {
   low: "LOW",
   medium: "MEDIUM",
+  high: "HIGH",
+  unknown: "UNKNOWN"
+} as const;
+
+const confidenceLevelMap = {
+  low: "LOW",
+  medium: "MEDIUM",
   high: "HIGH"
 } as const;
 
@@ -218,12 +225,20 @@ export async function persistMarketAnalysis({
           marketId: marketRecord.id,
           triggerSource: triggerSource as PrismaAnalysisTriggerSource,
           sourceInput: sourceInput ?? market.slug,
+          analysisVersion: analysis.version,
+          engineName: analysis.engineName,
           summary: analysis.summary,
-          resolutionSummary: analysis.resolutionSummary,
+          resolutionSummary: analysis.resolutionSourceSummary,
           resolutionSource: analysis.resolutionSource,
-          riskLabel: riskLabelMap[analysis.riskLabel],
+          criticalDatesSummary: analysis.criticalDatesSummary,
+          riskLabel: riskLabelMap[analysis.riskLevel],
+          riskScore: analysis.riskScore,
+          confidenceLevel: confidenceLevelMap[analysis.confidenceLevel],
           ambiguityFlags: toJsonValue(analysis.ambiguityFlags),
+          commentSignals: toJsonValue(analysis.commentSignals),
           criticalDates: toJsonValue(analysis.criticalDates),
+          timezoneNotes: toJsonValue(analysis.timezoneNotes),
+          evidence: toJsonValue(analysis.evidence),
           marketFacts: toJsonValue(analysis.marketFacts),
           rawAnalysis: toJsonValue(analysis),
           rawUpstream: toJsonValue({

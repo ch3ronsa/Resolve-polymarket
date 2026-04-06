@@ -45,7 +45,12 @@ async function main() {
       }
     });
 
-    const analysis = analyzeMarket(fixture.market);
+    const analysis = analyzeMarket({
+      market: fixture.market,
+      event: fixture.event ?? null,
+      comments: fixture.comments ?? [],
+      sourceInput: fixture.sourceInput
+    });
     const result = await persistMarketAnalysis({
       market: fixture.market,
       rawMarket: fixture.rawMarket ?? fixture.market,
@@ -74,4 +79,3 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
-

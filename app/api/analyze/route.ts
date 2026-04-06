@@ -37,7 +37,12 @@ async function analyzeInput(input: string) {
     }
 
     const market = bundle.market.data;
-    const analysis = analyzeMarket(market);
+    const analysis = analyzeMarket({
+      market,
+      event: bundle.event?.data ?? null,
+      comments: bundle.comments.data,
+      sourceInput: input
+    });
     const persistence = await persistMarketAnalysis({
       market,
       rawMarket: bundle.market.raw,

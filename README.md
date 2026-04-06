@@ -21,6 +21,12 @@ ResolveRadar is a simple MVP shell for resolution-focused Polymarket analysis. A
 - Upstream responses are validated with Zod and fetched through a timeout/retry/backoff wrapper.
 - Persistence stores normalized fields and raw upstream JSON for markets, comments, and analysis runs.
 
+## Analysis engine
+
+- The MVP uses a deterministic engine only. No OpenAI or other LLM calls are wired in yet.
+- The analysis contract is versioned and persisted per run so a future LLM-backed engine can sit behind a feature flag without changing the route contract.
+- Current outputs include summary text, resolution-source summary, critical-date summary, timezone notes, ambiguity flags, comment signals, evidence items, risk score, risk level, and confidence level.
+
 ## Routes
 
 - `/` homepage with Polymarket URL paste form

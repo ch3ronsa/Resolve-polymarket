@@ -62,7 +62,12 @@ export default async function AnalyzePage({ params }: AnalyzePageProps) {
   }
 
   const market = bundle.market.data;
-  const analysis = analyzeMarket(market);
+  const analysis = analyzeMarket({
+    market,
+    event: bundle.event?.data ?? null,
+    comments: bundle.comments.data,
+    sourceInput: slug
+  });
   const persistence = await persistMarketAnalysis({
     market,
     rawMarket: bundle.market.raw,
