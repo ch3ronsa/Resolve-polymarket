@@ -15,8 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="grain">{children}</body>
     </html>
   );
 }
-

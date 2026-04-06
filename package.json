@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "bot:dev": "tsx scripts/telegram-bot.ts"
@@ -30,4 +31,3 @@
     "typescript": "^5.8.3"
   }
 }
-
