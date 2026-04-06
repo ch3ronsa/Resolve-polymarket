@@ -1,25 +1,34 @@
-import { Bot } from "grammy";
+import { env } from "@/lib/env";
+import { createTelegramBot, syncTelegramCommands } from "@/lib/telegram/bot";
+import { logTelegramError, logTelegramInfo } from "@/lib/telegram/logging";
 
-const token = process.env.TELEGRAM_BOT_TOKEN;
+async function main() {
+  if (!env.TELEGRAM_BOT_TOKEN) {
+    throw new Error("TELEGRAM_BOT_TOKEN is required to run the Telegram bot.");
+  }
 
-if (!token) {
-  console.error("TELEGRAM_BOT_TOKEN is required to run the Telegram bot shell.");
-  process.exit(1);
+  if (env.TELEGRAM_BOT_MODE !== "polling") {
+    throw new Error(
+      "scripts/telegram-bot.ts starts local polling only. Reuse createTelegramBot() for webhook deployment."
+    );
+  }
+
+  const bot = createTelegramBot();
+  await syncTelegramCommands(bot);
+
+  process.once("SIGINT", () => bot.stop());
+  process.once("SIGTERM", () => bot.stop());
+
+  logTelegramInfo("startup", "Starting ResolveRadar Telegram bot in polling mode", {
+    watchLimit: env.TELEGRAM_WATCH_LIMIT
+  });
+
+  await bot.start({
+    allowed_updates: ["message"]
+  });
 }
 
-const bot = new Bot(token);
-
-bot.command("start", async (context) => {
-  await context.reply(
-    "ResolveRadar bot shell is live. Paste a Polymarket URL or slug and the analysis route can be wired in next."
-  );
+main().catch((error) => {
+  logTelegramError("startup", error);
+  process.exit(1);
 });
-
-bot.on("message:text", async (context) => {
-  await context.reply(
-    "Telegram delivery is scaffolded for the MVP, but the message-to-analysis flow is intentionally left for the next task."
-  );
-});
-
-bot.start();
-

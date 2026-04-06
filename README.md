@@ -9,7 +9,7 @@ ResolveRadar is a simple MVP shell for resolution-focused Polymarket analysis. A
 - Tailwind CSS
 - Prisma with PostgreSQL
 - Zod for input and env validation
-- grammY for the Telegram bot shell
+- grammY for the Telegram bot
 
 ## Data layer
 
@@ -37,6 +37,16 @@ ResolveRadar is a simple MVP shell for resolution-focused Polymarket analysis. A
 - `/api/watch` generated watchlist endpoint
 - `/api/health` configuration health endpoint
 
+## Telegram bot
+
+- `/start` introduces the bot and the non-advisory positioning.
+- `/help` shows the command set.
+- `/market <url-or-slug>` runs the stored deterministic analysis flow.
+- `/watch soon` and `/watch risky` return the latest generated watchlists.
+- Pasting a full `polymarket.com/event/...` URL into Telegram triggers analysis automatically.
+
+The bot is structured around `createTelegramBot()` in `lib/telegram/bot.ts`, so a future webhook route can reuse the same handlers without rewriting command logic. The local script only starts long polling.
+
 ## Local development
 
 1. Copy `.env.example` to `.env`.
@@ -55,11 +65,21 @@ Helpful commands:
 - `npm run sync:active`
 - `npm run watchlists:generate`
 - `npm run sync:run`
+- `npm run bot:dev`
 - `npm run build`
+
+Telegram setup:
+
+1. Set `DATABASE_URL`, `NEXT_PUBLIC_APP_URL`, and `TELEGRAM_BOT_TOKEN`.
+2. Keep `TELEGRAM_BOT_MODE="polling"` for local development.
+3. Optionally tune `TELEGRAM_WATCH_LIMIT` for `/watch` replies.
+4. Run `npm run bot:dev`.
+
+Webhook deployment is not enabled in this MVP step, but `TELEGRAM_BOT_MODE`, `TELEGRAM_WEBHOOK_URL`, and `TELEGRAM_WEBHOOK_SECRET` are reserved so the same bot module can be reused when a webhook route is added.
 
 ## Notes
 
 - The MVP intentionally avoids auth, billing, alerts, websockets, and trading-oriented UX.
 - Database persistence is optional for the UI shell. If `DATABASE_URL` is missing, the analysis page still renders live API-backed data.
-- The Telegram bot file is only a starter shell in this step.
+- The Telegram bot replies with short informational summaries and links back to the stored web result page when `NEXT_PUBLIC_APP_URL` is configured.
 - Background sync is incremental by design: it discovers active markets via the Polymarket events endpoint, scores only a bounded candidate set, and avoids syncing the full universe blindly.

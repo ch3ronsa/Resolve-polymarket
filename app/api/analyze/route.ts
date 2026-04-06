@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import { z } from "zod";
 
-import { analyzeMarket } from "@/lib/analysis/market-analysis";
+import {
+  MarketAnalysisRequestError,
+  runMarketAnalysis
+} from "@/lib/analysis/run-market-analysis";
 import { logApiError, logApiInfo } from "@/lib/api/logging";
 import { jsonError, jsonSuccess } from "@/lib/api/responses";
 import {
@@ -10,12 +13,7 @@ import {
   analyzeRequestSchema,
   successResponseSchema
 } from "@/lib/api/schemas";
-import { getLatestStoredAnalysisBySlug } from "@/lib/db/analysis-read";
-import { persistMarketAnalysis } from "@/lib/db/analysis-store";
-import { env } from "@/lib/env";
 import { isPolymarketApiError } from "@/lib/polymarket/errors";
-import { extractPolymarketSlug } from "@/lib/polymarket/slug";
-import { getPolymarketMarketBundleBySlug } from "@/lib/polymarket/service";
 
 const responseSchema = successResponseSchema(analyzeDataSchema);
 
@@ -55,125 +53,48 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!env.DATABASE_URL) {
-      return jsonError({
-        requestId,
-        code: "STORAGE_UNAVAILABLE",
-        message: "DATABASE_URL must be configured for the API layer.",
-        status: 503
-      });
-    }
-
-    const slug = extractPolymarketSlug(parsed.data.input);
-
-    if (!slug) {
-      return jsonError({
-        requestId,
-        code: "INVALID_SLUG",
-        message: "Enter a valid Polymarket URL or slug.",
-        status: 400
-      });
-    }
-
-    const cached = await getLatestStoredAnalysisBySlug(slug);
-
-    if (cached && !parsed.data.forceRefresh && cached.isFresh) {
-      logApiInfo(route, requestId, "Returning cached analysis", {
-        slug,
-        analysisRunId: cached.analysisRun.id
-      });
-
-      return jsonSuccess({
-        schema: responseSchema,
-        data: {
-          slug,
-          market: cached.market,
-          analysis: cached.analysis,
-          analysisRun: {
-            ...cached.analysisRun,
-            cached: true
-          },
-          commentsFetched: cached.market.events[0]?.commentCount ?? 0
-        },
-        trace: {
-          requestId,
-          analysisRunId: cached.analysisRun.id,
-          generatedAt: new Date().toISOString(),
-          cached: true
-        }
-      });
-    }
-
-    const bundle = await getPolymarketMarketBundleBySlug(slug);
-
-    if (!bundle) {
-      return jsonError({
-        requestId,
-        code: "MARKET_NOT_FOUND",
-        message: "No market was returned for that slug.",
-        status: 404,
-        details: { slug }
-      });
-    }
-
-    const market = bundle.market.data;
-    const analysis = analyzeMarket({
-      market,
-      event: bundle.event?.data ?? null,
-      comments: bundle.comments.data,
-      sourceInput: parsed.data.input
-    });
-    const persistence = await persistMarketAnalysis({
-      market,
-      rawMarket: bundle.market.raw,
-      event: bundle.event?.data ?? null,
-      rawEvent: bundle.event?.raw,
-      comments: bundle.comments.data,
-      rawComments: bundle.comments.raw,
-      analysis,
-      sourceInput: parsed.data.input,
+    const result = await runMarketAnalysis({
+      input: parsed.data.input,
+      forceRefresh: parsed.data.forceRefresh,
       triggerSource: "API"
     });
 
-    if (!persistence.persisted || !persistence.analysisRunId || !persistence.analysisCreatedAt) {
-      logApiError(route, requestId, new Error("Analysis persistence failed"), {
-        slug,
-        reason: persistence.reason
-      });
-
-      return jsonError({
-        requestId,
-        code: "PERSISTENCE_UNAVAILABLE",
-        message: persistence.reason ?? "Analysis could not be persisted.",
-        status: 503
+    if (result.analysisRun.cached) {
+      logApiInfo(route, requestId, "Returning cached analysis", {
+        slug: result.slug,
+        analysisRunId: result.analysisRun.id
       });
     }
 
     return jsonSuccess({
       schema: responseSchema,
       data: {
-        slug,
-        market,
-        analysis,
-        analysisRun: {
-          id: persistence.analysisRunId,
-          createdAt: persistence.analysisCreatedAt,
-          triggerSource: "API",
-          analysisVersion: analysis.version,
-          engineName: analysis.engineName,
-          cached: false
-        },
-        commentsFetched: bundle.comments.data.length
+        slug: result.slug,
+        market: result.market,
+        analysis: result.analysis,
+        analysisRun: result.analysisRun,
+        commentsFetched: result.commentsFetched
       },
       trace: {
         requestId,
-        analysisRunId: persistence.analysisRunId,
+        analysisRunId: result.analysisRun.id,
         generatedAt: new Date().toISOString(),
-        cached: false
+        cached: result.analysisRun.cached
       },
       status: 200
     });
   } catch (error) {
+    if (error instanceof MarketAnalysisRequestError) {
+      logApiError(route, requestId, error, error.details);
+      return jsonError({
+        requestId,
+        code: error.code,
+        message: error.message,
+        status: error.status,
+        details: error.details
+      });
+    }
+
     if (isPolymarketApiError(error)) {
       logApiError(route, requestId, error, {
         endpoint: error.endpoint,

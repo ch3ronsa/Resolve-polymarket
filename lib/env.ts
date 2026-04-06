@@ -72,7 +72,17 @@ const envSchema = z.object({
     z.coerce.number().int().min(1).max(100)
   ),
   NEXT_PUBLIC_APP_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
-  TELEGRAM_BOT_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional())
+  TELEGRAM_BOT_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+  TELEGRAM_BOT_MODE: z.preprocess(
+    (value) => emptyToUndefined(value) ?? "polling",
+    z.enum(["polling", "webhook"])
+  ),
+  TELEGRAM_WEBHOOK_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  TELEGRAM_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().min(12).optional()),
+  TELEGRAM_WATCH_LIMIT: z.preprocess(
+    (value) => emptyToUndefined(value) ?? "5",
+    z.coerce.number().int().min(1).max(10)
+  )
 });
 
 const parsedEnv = envSchema.safeParse({
@@ -94,7 +104,11 @@ const parsedEnv = envSchema.safeParse({
   RECENT_ACTIVITY_WINDOW_HOURS: process.env.RECENT_ACTIVITY_WINDOW_HOURS,
   WATCHLIST_MAX_PER_KIND: process.env.WATCHLIST_MAX_PER_KIND,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
+  TELEGRAM_BOT_MODE: process.env.TELEGRAM_BOT_MODE,
+  TELEGRAM_WEBHOOK_URL: process.env.TELEGRAM_WEBHOOK_URL,
+  TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
+  TELEGRAM_WATCH_LIMIT: process.env.TELEGRAM_WATCH_LIMIT
 });
 
 if (!parsedEnv.success) {
