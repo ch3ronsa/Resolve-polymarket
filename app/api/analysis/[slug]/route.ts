@@ -14,6 +14,8 @@ import { normalizeSlug } from "@/lib/polymarket/slug";
 
 const responseSchema = successResponseSchema(analysisRecordDataSchema);
 
+export const runtime = "nodejs";
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ slug: string }> }

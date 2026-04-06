@@ -1,11 +1,13 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { PrismaClient } from "@prisma/client";
 
 import { analyzeMarket } from "@/lib/analysis/market-analysis";
 import { persistMarketAnalysis } from "@/lib/db/analysis-store";
+import { logInfo } from "@/lib/logging";
 import type { PolymarketComment, PolymarketEvent, PolymarketMarket } from "@/lib/polymarket/types";
+import { generatePersistedWatchlists } from "@/lib/watch/run-generated-watchlists";
 
 type SeedFixture = {
   sourceInput: string;
@@ -17,62 +19,87 @@ type SeedFixture = {
   rawComments?: unknown;
 };
 
-async function loadFixture() {
-  const fixturePath = path.join(process.cwd(), "prisma", "fixtures", "sample-market-bundle.json");
-  const file = await readFile(fixturePath, "utf8");
-  return JSON.parse(file) as SeedFixture;
+async function loadFixtures() {
+  const fixtureDirectory = path.join(process.cwd(), "prisma", "fixtures");
+  const files = (await readdir(fixtureDirectory))
+    .filter((file) => file.endsWith(".json"))
+    .sort();
+
+  const fixtures = await Promise.all(
+    files.map(async (file) => {
+      const fixturePath = path.join(fixtureDirectory, file);
+      const contents = await readFile(fixturePath, "utf8");
+      return JSON.parse(contents) as SeedFixture;
+    })
+  );
+
+  return fixtures;
 }
 
 async function main() {
   const prisma = new PrismaClient();
-  const fixture = await loadFixture();
+  const fixtures = await loadFixtures();
 
   try {
-    await prisma.watchEntry.upsert({
-      where: {
-        kind_slug: {
+    for (const fixture of fixtures) {
+      await prisma.watchEntry.upsert({
+        where: {
+          kind_slug: {
+            kind: "MANUAL",
+            slug: fixture.market.slug
+          }
+        },
+        create: {
           kind: "MANUAL",
-          slug: fixture.market.slug
+          slug: fixture.market.slug,
+          sourceInput: fixture.sourceInput,
+          enabled: true,
+          note: "Seeded sample watch entry"
+        },
+        update: {
+          sourceInput: fixture.sourceInput,
+          enabled: true,
+          note: "Seeded sample watch entry"
         }
-      },
-      create: {
-        kind: "MANUAL",
-        slug: fixture.market.slug,
+      });
+
+      const analysis = analyzeMarket({
+        market: fixture.market,
+        event: fixture.event ?? null,
+        comments: fixture.comments ?? [],
+        sourceInput: fixture.sourceInput
+      });
+      const result = await persistMarketAnalysis({
+        market: fixture.market,
+        rawMarket: fixture.rawMarket ?? fixture.market,
+        event: fixture.event ?? null,
+        rawEvent: fixture.rawEvent ?? fixture.event ?? null,
+        comments: fixture.comments ?? [],
+        rawComments: fixture.rawComments ?? fixture.comments ?? [],
+        analysis,
         sourceInput: fixture.sourceInput,
-        enabled: true,
-        note: "Seeded sample watch entry"
-      },
-      update: {
-        sourceInput: fixture.sourceInput,
-        enabled: true,
-        note: "Seeded sample watch entry"
+        triggerSource: "SEED"
+      });
+
+      if (!result.persisted) {
+        throw new Error(result.reason ?? `Seed persistence failed for ${fixture.market.slug}.`);
       }
-    });
 
-    const analysis = analyzeMarket({
-      market: fixture.market,
-      event: fixture.event ?? null,
-      comments: fixture.comments ?? [],
-      sourceInput: fixture.sourceInput
-    });
-    const result = await persistMarketAnalysis({
-      market: fixture.market,
-      rawMarket: fixture.rawMarket ?? fixture.market,
-      event: fixture.event ?? null,
-      rawEvent: fixture.rawEvent ?? fixture.event ?? null,
-      comments: fixture.comments ?? [],
-      rawComments: fixture.rawComments ?? fixture.comments ?? [],
-      analysis,
-      sourceInput: fixture.sourceInput,
-      triggerSource: "SEED"
-    });
-
-    if (!result.persisted) {
-      throw new Error(result.reason ?? "Seed persistence failed.");
+      logInfo({
+        scope: "seed",
+        event: "fixture_seeded",
+        message: `Seeded analysis for ${fixture.market.slug}.`,
+        details: {
+          comments: fixture.comments?.length ?? 0,
+          analysisRunId: result.analysisRunId
+        }
+      });
     }
 
+    await generatePersistedWatchlists();
+
     console.log(
-      `Seeded market ${fixture.market.slug} with ${fixture.comments?.length ?? 0} comments and analysis run ${result.analysisRunId}.`
+      `Seeded ${fixtures.length} markets with deterministic analyses and refreshed generated watchlists.`
     );
   } finally {
     await prisma.$disconnect();

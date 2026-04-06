@@ -82,7 +82,8 @@ const envSchema = z.object({
   TELEGRAM_WATCH_LIMIT: z.preprocess(
     (value) => emptyToUndefined(value) ?? "5",
     z.coerce.number().int().min(1).max(10)
-  )
+  ),
+  CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(12).optional())
 });
 
 const parsedEnv = envSchema.safeParse({
@@ -108,7 +109,8 @@ const parsedEnv = envSchema.safeParse({
   TELEGRAM_BOT_MODE: process.env.TELEGRAM_BOT_MODE,
   TELEGRAM_WEBHOOK_URL: process.env.TELEGRAM_WEBHOOK_URL,
   TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
-  TELEGRAM_WATCH_LIMIT: process.env.TELEGRAM_WATCH_LIMIT
+  TELEGRAM_WATCH_LIMIT: process.env.TELEGRAM_WATCH_LIMIT,
+  CRON_SECRET: process.env.CRON_SECRET
 });
 
 if (!parsedEnv.success) {

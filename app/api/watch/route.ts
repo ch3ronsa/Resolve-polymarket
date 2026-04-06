@@ -15,6 +15,8 @@ import { readGeneratedWatchEntries } from "@/lib/watch/store";
 
 const responseSchema = successResponseSchema(watchDataSchema);
 
+export const runtime = "nodejs";
+
 export async function GET(request: Request) {
   const requestId = randomUUID();
   const route = "/api/watch";
