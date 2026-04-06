@@ -1,0 +1,108 @@
+{
+  "sourceInput": "will-the-federal-reserve-cut-rates-in-june-2026",
+  "market": {
+    "id": "101001",
+    "conditionId": "0xsampleconditionid",
+    "slug": "will-the-federal-reserve-cut-rates-in-june-2026",
+    "question": "Will the Federal Reserve cut rates in June 2026?",
+    "description": "This sample fixture represents a binary macro market and exists only to seed a local ResolveRadar environment.",
+    "resolutionSource": "Federal Reserve statement and FOMC materials",
+    "endDate": "2026-06-17T18:00:00.000Z",
+    "startDate": "2026-04-01T12:00:00.000Z",
+    "umaEndDate": "2026-06-18T18:00:00.000Z",
+    "closedTime": null,
+    "lowerBound": null,
+    "upperBound": null,
+    "lowerBoundDate": null,
+    "upperBoundDate": null,
+    "category": "Politics",
+    "active": true,
+    "closed": false,
+    "marketType": "binary",
+    "formatType": "binary",
+    "hasReviewedDates": true,
+    "commentsEnabled": true,
+    "disqusThread": "sample-thread",
+    "outcomes": ["Yes", "No"],
+    "outcomePrices": [0.48, 0.52],
+    "volume": 125000.45,
+    "liquidity": 42000.1,
+    "events": [
+      {
+        "id": "2001",
+        "slug": "fed-june-2026-decision",
+        "title": "Fed June 2026 Decision",
+        "endDate": "2026-06-17T18:00:00.000Z",
+        "resolutionSource": "Federal Reserve statement and FOMC materials",
+        "category": "Politics",
+        "negRisk": false,
+        "closed": false,
+        "active": true,
+        "commentsEnabled": true,
+        "commentCount": 2
+      }
+    ]
+  },
+  "event": {
+    "id": "2001",
+    "ticker": "FED-JUN26",
+    "slug": "fed-june-2026-decision",
+    "title": "Fed June 2026 Decision",
+    "subtitle": "Sample fixture event",
+    "description": "A seeded event for local ResolveRadar development.",
+    "resolutionSource": "Federal Reserve statement and FOMC materials",
+    "startDate": "2026-04-01T12:00:00.000Z",
+    "creationDate": "2026-04-01T12:00:00.000Z",
+    "endDate": "2026-06-17T18:00:00.000Z",
+    "image": null,
+    "icon": null,
+    "active": true,
+    "closed": false,
+    "archived": false,
+    "featured": false,
+    "restricted": false,
+    "liquidity": 42000.1,
+    "volume": 125000.45,
+    "openInterest": 51000,
+    "category": "Politics",
+    "subcategory": "Central Banks",
+    "commentsEnabled": true,
+    "commentCount": 2,
+    "disqusThread": "sample-thread",
+    "closedTime": null
+  },
+  "comments": [
+    {
+      "id": "9001",
+      "body": "The exact timing of the meeting statement should be checked.",
+      "createdAt": "2026-04-02T09:15:00.000Z",
+      "updatedAt": "2026-04-02T09:15:00.000Z",
+      "parentEntityType": "market",
+      "parentEntityId": "101001",
+      "parentCommentId": null,
+      "userAddress": "0x1234",
+      "replyAddress": null,
+      "reportCount": 0,
+      "reactionCount": 3,
+      "profileName": "Sample Analyst",
+      "profileHandle": "sample-analyst",
+      "profileImage": null,
+      "profileWalletAddress": "0x1234"
+    }
+  ],
+  "rawMarket": {
+    "id": "101001",
+    "slug": "will-the-federal-reserve-cut-rates-in-june-2026"
+  },
+  "rawEvent": {
+    "id": "2001",
+    "slug": "fed-june-2026-decision"
+  },
+  "rawComments": [
+    {
+      "id": "9001",
+      "body": "The exact timing of the meeting statement should be checked."
+    }
+  ]
+}
+

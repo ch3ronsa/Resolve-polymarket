@@ -13,19 +13,125 @@ enum ResolutionRisk {
   HIGH
 }
 
-model MarketAnalysis {
-  id               String         @id @default(cuid())
-  slug             String         @unique
-  marketId         String
-  question         String
-  summary          String
-  resolutionSource String?
-  riskLabel        ResolutionRisk
-  ambiguityFlags   Json
-  criticalDates    Json
-  rawMarket        Json
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  lastAnalyzedAt   DateTime       @default(now())
+enum AnalysisTriggerSource {
+  WEB
+  API
+  TELEGRAM
+  SEED
+  MANUAL
 }
 
+model Market {
+  id                    String          @id @default(cuid())
+  polymarketId          String          @unique
+  primaryEventId        String?
+  slug                  String          @unique
+  question              String
+  description           String?
+  resolutionSource      String?
+  category              String?
+  active                Boolean         @default(false)
+  closed                Boolean         @default(false)
+  marketType            String?
+  formatType            String?
+  conditionId           String?
+  commentsEnabled       Boolean?
+  disqusThread          String?
+  hasReviewedDates      Boolean?
+  startDate             DateTime?
+  endDate               DateTime?
+  umaEndDate            DateTime?
+  closedTime            DateTime?
+  lowerBound            String?
+  upperBound            String?
+  lowerBoundDate        DateTime?
+  upperBoundDate        DateTime?
+  outcomes              String[]
+  outcomePrices         Float[]
+  liquidity             Float?
+  volume                Float?
+  eventSlug             String?
+  eventTitle            String?
+  eventCategory         String?
+  eventSubcategory      String?
+  eventStartDate        DateTime?
+  eventEndDate          DateTime?
+  eventClosedTime       DateTime?
+  eventCommentCount     Int?
+  eventCommentsEnabled  Boolean?
+  rawMarket             Json
+  rawEvent              Json?
+  syncedAt              DateTime        @default(now())
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  comments              MarketComment[]
+  analysisRuns          AnalysisRun[]
+  watchEntries          WatchEntry[]
+
+  @@map("markets")
+}
+
+model MarketComment {
+  id                   String    @id @default(cuid())
+  polymarketCommentId  String    @unique
+  marketId             String
+  parentEntityType     String?
+  parentEntityId       String?
+  parentCommentId      String?
+  body                 String?
+  userAddress          String?
+  replyAddress         String?
+  profileName          String?
+  profileHandle        String?
+  profileImage         String?
+  profileWalletAddress String?
+  reactionCount        Int?
+  reportCount          Int?
+  upstreamCreatedAt    DateTime?
+  upstreamUpdatedAt    DateTime?
+  rawComment           Json
+  syncedAt             DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  market               Market    @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@index([marketId, upstreamCreatedAt])
+  @@map("market_comments")
+}
+
+model AnalysisRun {
+  id                String                @id @default(cuid())
+  marketId          String
+  triggerSource     AnalysisTriggerSource @default(WEB)
+  sourceInput       String?
+  summary           String
+  resolutionSummary String
+  resolutionSource  String?
+  riskLabel         ResolutionRisk
+  ambiguityFlags    Json
+  criticalDates     Json
+  marketFacts       Json
+  rawAnalysis       Json
+  rawUpstream       Json
+  createdAt         DateTime              @default(now())
+  market            Market                @relation(fields: [marketId], references: [id], onDelete: Cascade)
+
+  @@index([marketId, createdAt])
+  @@map("analysis_runs")
+}
+
+model WatchEntry {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  sourceInput    String
+  marketId       String?
+  enabled        Boolean   @default(true)
+  note           String?
+  lastCheckedAt  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  market         Market?   @relation(fields: [marketId], references: [id], onDelete: SetNull)
+
+  @@index([enabled, updatedAt])
+  @@map("watch_entries")
+}

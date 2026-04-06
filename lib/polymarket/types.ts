@@ -1,50 +1,11 @@
-import { z } from "zod";
+import {
+  polymarketCommentListSchema,
+  polymarketEventListSchema,
+  rawPolymarketMarketSchema
+} from "@/lib/polymarket/schemas";
 
-const rawEventSchema = z
-  .object({
-    slug: z.string().nullish(),
-    title: z.string().nullish(),
-    endDate: z.string().nullish(),
-    resolutionSource: z.string().nullish(),
-    category: z.string().nullish(),
-    negRisk: z.boolean().nullish(),
-    closed: z.boolean().nullish(),
-    active: z.boolean().nullish()
-  })
-  .passthrough();
-
-const rawMarketSchema = z
-  .object({
-    id: z.union([z.string(), z.number()]),
-    slug: z.string(),
-    question: z.string(),
-    description: z.string().nullish(),
-    resolutionSource: z.string().nullish(),
-    endDate: z.string().nullish(),
-    startDate: z.string().nullish(),
-    umaEndDate: z.string().nullish(),
-    closedTime: z.string().nullish(),
-    lowerBound: z.string().nullish(),
-    upperBound: z.string().nullish(),
-    lowerBoundDate: z.string().nullish(),
-    upperBoundDate: z.string().nullish(),
-    category: z.string().nullish(),
-    active: z.boolean().optional().default(false),
-    closed: z.boolean().optional().default(false),
-    marketType: z.string().nullish(),
-    formatType: z.string().nullish(),
-    hasReviewedDates: z.boolean().nullish(),
-    outcomes: z.unknown().optional(),
-    outcomePrices: z.unknown().optional(),
-    volume: z.union([z.string(), z.number()]).nullish(),
-    liquidity: z.union([z.string(), z.number()]).nullish(),
-    volumeNum: z.number().nullish().optional(),
-    liquidityNum: z.number().nullish().optional(),
-    events: z.array(rawEventSchema).optional().default([])
-  })
-  .passthrough();
-
-export type PolymarketEvent = {
+export type PolymarketEmbeddedEvent = {
+  id: string | null;
   slug: string | null;
   title: string | null;
   endDate: string | null;
@@ -53,10 +14,13 @@ export type PolymarketEvent = {
   negRisk: boolean;
   closed: boolean;
   active: boolean;
+  commentsEnabled: boolean | null;
+  commentCount: number | null;
 };
 
 export type PolymarketMarket = {
   id: string;
+  conditionId: string | null;
   slug: string;
   question: string;
   description: string | null;
@@ -75,11 +39,60 @@ export type PolymarketMarket = {
   marketType: string | null;
   formatType: string | null;
   hasReviewedDates: boolean | null;
+  commentsEnabled: boolean | null;
+  disqusThread: string | null;
   outcomes: string[];
   outcomePrices: number[];
   volume: number | null;
   liquidity: number | null;
-  events: PolymarketEvent[];
+  events: PolymarketEmbeddedEvent[];
+};
+
+export type PolymarketEvent = {
+  id: string;
+  ticker: string | null;
+  slug: string | null;
+  title: string | null;
+  subtitle: string | null;
+  description: string | null;
+  resolutionSource: string | null;
+  startDate: string | null;
+  creationDate: string | null;
+  endDate: string | null;
+  image: string | null;
+  icon: string | null;
+  active: boolean | null;
+  closed: boolean | null;
+  archived: boolean | null;
+  featured: boolean | null;
+  restricted: boolean | null;
+  liquidity: number | null;
+  volume: number | null;
+  openInterest: number | null;
+  category: string | null;
+  subcategory: string | null;
+  commentsEnabled: boolean | null;
+  commentCount: number | null;
+  disqusThread: string | null;
+  closedTime: string | null;
+};
+
+export type PolymarketComment = {
+  id: string;
+  body: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  parentEntityType: string | null;
+  parentEntityId: string | null;
+  parentCommentId: string | null;
+  userAddress: string | null;
+  replyAddress: string | null;
+  reportCount: number | null;
+  reactionCount: number | null;
+  profileName: string | null;
+  profileHandle: string | null;
+  profileImage: string | null;
+  profileWalletAddress: string | null;
 };
 
 function coerceStringArray(value: unknown) {
@@ -150,10 +163,11 @@ function coerceNumberArray(value: unknown) {
 }
 
 export function parsePolymarketMarket(payload: unknown): PolymarketMarket {
-  const raw = rawMarketSchema.parse(payload);
+  const raw = rawPolymarketMarketSchema.parse(payload);
 
   return {
     id: String(raw.id),
+    conditionId: raw.conditionId ?? null,
     slug: raw.slug,
     question: raw.question,
     description: raw.description ?? null,
@@ -172,11 +186,14 @@ export function parsePolymarketMarket(payload: unknown): PolymarketMarket {
     marketType: raw.marketType ?? null,
     formatType: raw.formatType ?? null,
     hasReviewedDates: raw.hasReviewedDates ?? null,
+    commentsEnabled: raw.commentsEnabled ?? null,
+    disqusThread: raw.disqusThread ?? null,
     outcomes: coerceStringArray(raw.outcomes),
     outcomePrices: coerceNumberArray(raw.outcomePrices),
     volume: raw.volumeNum ?? coerceNumber(raw.volume),
     liquidity: raw.liquidityNum ?? coerceNumber(raw.liquidity),
     events: raw.events.map((event) => ({
+      id: event.id ? String(event.id) : null,
       slug: event.slug ?? null,
       title: event.title ?? null,
       endDate: event.endDate ?? null,
@@ -184,8 +201,60 @@ export function parsePolymarketMarket(payload: unknown): PolymarketMarket {
       category: event.category ?? null,
       negRisk: Boolean(event.negRisk),
       closed: Boolean(event.closed),
-      active: Boolean(event.active)
+      active: Boolean(event.active),
+      commentsEnabled: event.commentsEnabled ?? null,
+      commentCount: event.commentCount ?? null
     }))
   };
 }
 
+export function parsePolymarketEvents(payload: unknown): PolymarketEvent[] {
+  return polymarketEventListSchema.parse(payload).map((event) => ({
+    id: String(event.id),
+    ticker: event.ticker ?? null,
+    slug: event.slug ?? null,
+    title: event.title ?? null,
+    subtitle: event.subtitle ?? null,
+    description: event.description ?? null,
+    resolutionSource: event.resolutionSource ?? null,
+    startDate: event.startDate ?? null,
+    creationDate: event.creationDate ?? null,
+    endDate: event.endDate ?? null,
+    image: event.image ?? null,
+    icon: event.icon ?? null,
+    active: event.active ?? null,
+    closed: event.closed ?? null,
+    archived: event.archived ?? null,
+    featured: event.featured ?? null,
+    restricted: event.restricted ?? null,
+    liquidity: event.liquidity ?? null,
+    volume: event.volume ?? null,
+    openInterest: event.openInterest ?? null,
+    category: event.category ?? null,
+    subcategory: event.subcategory ?? null,
+    commentsEnabled: event.commentsEnabled ?? null,
+    commentCount: event.commentCount ?? null,
+    disqusThread: event.disqusThread ?? null,
+    closedTime: event.closedTime ?? null
+  }));
+}
+
+export function parsePolymarketComments(payload: unknown): PolymarketComment[] {
+  return polymarketCommentListSchema.parse(payload).map((comment) => ({
+    id: String(comment.id),
+    body: comment.body ?? null,
+    createdAt: comment.createdAt ?? null,
+    updatedAt: comment.updatedAt ?? null,
+    parentEntityType: comment.parentEntityType ?? null,
+    parentEntityId: comment.parentEntityID ? String(comment.parentEntityID) : null,
+    parentCommentId: comment.parentCommentID ? String(comment.parentCommentID) : null,
+    userAddress: comment.userAddress ?? null,
+    replyAddress: comment.replyAddress ?? null,
+    reportCount: comment.reportCount ?? null,
+    reactionCount: comment.reactionCount ?? null,
+    profileName: comment.profile?.name ?? comment.profile?.pseudonym ?? null,
+    profileHandle: comment.profile?.username ?? null,
+    profileImage: comment.profile?.profileImage ?? null,
+    profileWalletAddress: comment.profile?.walletAddress ?? null
+  }));
+}

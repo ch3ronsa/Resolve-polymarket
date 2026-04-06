@@ -6,8 +6,8 @@ import { Panel } from "@/components/panel";
 import { SiteHeader } from "@/components/site-header";
 import { analyzeMarket } from "@/lib/analysis/market-analysis";
 import { persistMarketAnalysis } from "@/lib/db/analysis-store";
-import { getPolymarketMarketBySlug } from "@/lib/polymarket/client";
 import { normalizeSlug } from "@/lib/polymarket/slug";
+import { getPolymarketMarketBundleBySlug } from "@/lib/polymarket/service";
 
 type AnalyzePageProps = {
   params: Promise<{ slug: string }>;
@@ -43,9 +43,9 @@ export default async function AnalyzePage({ params }: AnalyzePageProps) {
     );
   }
 
-  const market = await getPolymarketMarketBySlug(slug);
+  const bundle = await getPolymarketMarketBundleBySlug(slug);
 
-  if (!market) {
+  if (!bundle) {
     return (
       <main className="min-h-screen px-6 py-6">
         <div className="mx-auto max-w-5xl">
@@ -61,8 +61,19 @@ export default async function AnalyzePage({ params }: AnalyzePageProps) {
     );
   }
 
+  const market = bundle.market.data;
   const analysis = analyzeMarket(market);
-  const persistence = await persistMarketAnalysis({ market, analysis });
+  const persistence = await persistMarketAnalysis({
+    market,
+    rawMarket: bundle.market.raw,
+    event: bundle.event?.data ?? null,
+    rawEvent: bundle.event?.raw,
+    comments: bundle.comments.data,
+    rawComments: bundle.comments.raw,
+    analysis,
+    sourceInput: slug,
+    triggerSource: "WEB"
+  });
 
   return (
     <main className="min-h-screen px-6 py-6">
@@ -103,4 +114,3 @@ export default async function AnalyzePage({ params }: AnalyzePageProps) {
     </main>
   );
 }
-

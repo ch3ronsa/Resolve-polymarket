@@ -3,46 +3,75 @@ import { z } from "zod";
 
 import { analyzeMarket } from "@/lib/analysis/market-analysis";
 import { persistMarketAnalysis } from "@/lib/db/analysis-store";
-import { getPolymarketMarketBySlug } from "@/lib/polymarket/client";
+import { isPolymarketApiError } from "@/lib/polymarket/errors";
 import { extractPolymarketSlug } from "@/lib/polymarket/slug";
+import { getPolymarketMarketBundleBySlug } from "@/lib/polymarket/service";
 
 const inputSchema = z.object({
   input: z.string().min(1, "A Polymarket URL or slug is required.")
 });
 
 async function analyzeInput(input: string) {
-  const slug = extractPolymarketSlug(input);
+  try {
+    const slug = extractPolymarketSlug(input);
 
-  if (!slug) {
-    return NextResponse.json(
-      {
-        error: "Enter a valid Polymarket URL or slug."
-      },
-      { status: 400 }
-    );
+    if (!slug) {
+      return NextResponse.json(
+        {
+          error: "Enter a valid Polymarket URL or slug."
+        },
+        { status: 400 }
+      );
+    }
+
+    const bundle = await getPolymarketMarketBundleBySlug(slug);
+
+    if (!bundle) {
+      return NextResponse.json(
+        {
+          error: "No market was returned for that slug.",
+          slug
+        },
+        { status: 404 }
+      );
+    }
+
+    const market = bundle.market.data;
+    const analysis = analyzeMarket(market);
+    const persistence = await persistMarketAnalysis({
+      market,
+      rawMarket: bundle.market.raw,
+      event: bundle.event?.data ?? null,
+      rawEvent: bundle.event?.raw,
+      comments: bundle.comments.data,
+      rawComments: bundle.comments.raw,
+      analysis,
+      sourceInput: input,
+      triggerSource: "API"
+    });
+
+    return NextResponse.json({
+      slug,
+      market,
+      analysis,
+      persistence
+    });
+  } catch (error) {
+    if (isPolymarketApiError(error)) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.code,
+          endpoint: error.endpoint,
+          retryable: error.retryable,
+          status: error.status
+        },
+        { status: error.status && error.status >= 400 ? error.status : 502 }
+      );
+    }
+
+    throw error;
   }
-
-  const market = await getPolymarketMarketBySlug(slug);
-
-  if (!market) {
-    return NextResponse.json(
-      {
-        error: "No market was returned for that slug.",
-        slug
-      },
-      { status: 404 }
-    );
-  }
-
-  const analysis = analyzeMarket(market);
-  const persistence = await persistMarketAnalysis({ market, analysis });
-
-  return NextResponse.json({
-    slug,
-    market,
-    analysis,
-    persistence
-  });
 }
 
 export async function GET(request: Request) {
@@ -78,4 +107,3 @@ export async function POST(request: Request) {
 
   return analyzeInput(parsed.data.input);
 }
-

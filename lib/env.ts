@@ -15,6 +15,18 @@ const envSchema = z.object({
     (value) => emptyToUndefined(value) ?? "https://gamma-api.polymarket.com",
     z.string().url()
   ),
+  POLYMARKET_API_TIMEOUT_MS: z.preprocess(
+    (value) => emptyToUndefined(value) ?? "8000",
+    z.coerce.number().int().positive()
+  ),
+  POLYMARKET_API_RETRY_COUNT: z.preprocess(
+    (value) => emptyToUndefined(value) ?? "2",
+    z.coerce.number().int().min(0).max(5)
+  ),
+  POLYMARKET_COMMENTS_LIMIT: z.preprocess(
+    (value) => emptyToUndefined(value) ?? "20",
+    z.coerce.number().int().min(1).max(100)
+  ),
   NEXT_PUBLIC_APP_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
   TELEGRAM_BOT_TOKEN: z.preprocess(emptyToUndefined, z.string().min(1).optional())
 });
@@ -23,6 +35,9 @@ const parsedEnv = envSchema.safeParse({
   NODE_ENV: process.env.NODE_ENV,
   DATABASE_URL: process.env.DATABASE_URL,
   POLYMARKET_API_BASE_URL: process.env.POLYMARKET_API_BASE_URL,
+  POLYMARKET_API_TIMEOUT_MS: process.env.POLYMARKET_API_TIMEOUT_MS,
+  POLYMARKET_API_RETRY_COUNT: process.env.POLYMARKET_API_RETRY_COUNT,
+  POLYMARKET_COMMENTS_LIMIT: process.env.POLYMARKET_COMMENTS_LIMIT,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN
 });
@@ -33,4 +48,3 @@ if (!parsedEnv.success) {
 }
 
 export const env = parsedEnv.data;
-

@@ -11,6 +11,16 @@ ResolveRadar is a simple MVP shell for resolution-focused Polymarket analysis. A
 - Zod for input and env validation
 - grammY for the Telegram bot shell
 
+## Data layer
+
+- `extractPolymarketSlug(input)` accepts both raw slugs and full `polymarket.com/event/...` URLs.
+- Typed Polymarket clients cover:
+  - `GET /markets/slug/{slug}`
+  - `GET /events`
+  - `GET /comments`
+- Upstream responses are validated with Zod and fetched through a timeout/retry/backoff wrapper.
+- Persistence stores normalized fields and raw upstream JSON for markets, comments, and analysis runs.
+
 ## Routes
 
 - `/` homepage with Polymarket URL paste form
@@ -29,6 +39,12 @@ If you want persistence, point `DATABASE_URL` at PostgreSQL and run:
 
 1. `npx prisma migrate dev --name init`
 2. `npm run dev`
+
+Helpful commands:
+
+- `npx prisma migrate deploy`
+- `npm run prisma:seed`
+- `npm run build`
 
 ## Notes
 
